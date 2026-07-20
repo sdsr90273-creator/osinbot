@@ -1,5 +1,3 @@
-Python 3.14.3 (tags/v3.14.3:323c59a, Feb  3 2026, 16:04:56) [MSC v.1944 64 bit (AMD64)] on win32
-Enter "help" below or click "Help" above for more information.
 import aiosqlite
 import time
 from datetime import datetime
@@ -119,7 +117,7 @@ async def get_promo(code):
 
 async def use_promo(code, user_id):
     promo = await get_promo(code)
-    if not promo or promo[3] is not None:  # used_by не NULL
+    if not promo or promo[3] is not None:
         return False
     duration = promo[1]
     await set_vip(user_id, duration)
@@ -143,36 +141,37 @@ async def delete_promo(code):
 
 # ---- Платежи ----
 async def add_payment(user_id, amount, payment_id, status='pending'):
-...     async with aiosqlite.connect(DB_NAME) as db:
-...         await db.execute(
-...             'INSERT INTO payments (user_id, amount, payment_id, status) VALUES (?, ?, ?, ?)',
-...             (user_id, amount, payment_id, status)
-...         )
-...         await db.commit()
-... 
-... async def update_payment_status(payment_id, status):
-...     async with aiosqlite.connect(DB_NAME) as db:
-...         await db.execute('UPDATE payments SET status = ? WHERE payment_id = ?', (status, payment_id))
-...         await db.commit()
-... 
-... async def get_payment(payment_id):
-...     async with aiosqlite.connect(DB_NAME) as db:
-...         async with db.execute('SELECT * FROM payments WHERE payment_id = ?', (payment_id,)) as cursor:
-...             return await cursor.fetchone()
-... 
-... # ---- Статистика ----
-... async def get_stats():
-...     async with aiosqlite.connect(DB_NAME) as db:
-...         total_users = await db.execute('SELECT COUNT(*) FROM users')
-...         total_users = (await total_users.fetchone())[0]
-...         active_vip = await db.execute('SELECT COUNT(*) FROM users WHERE vip_until > strftime("%s", "now")')
-...         active_vip = (await active_vip.fetchone())[0]
-...         total_payments = await db.execute('SELECT COUNT(*) FROM payments WHERE status="success"')
-...         total_payments = (await total_payments.fetchone())[0]
-...         total_revenue = await db.execute('SELECT SUM(amount) FROM payments WHERE status="success"')
-...         total_revenue = (await total_revenue.fetchone())[0] or 0
-...         return {
-...             'total_users': total_users,
-...             'active_vip': active_vip,
-...             'total_payments': total_payments,
-...             'total_revenue': total_revenue
+    async with aiosqlite.connect(DB_NAME) as db:
+        await db.execute(
+            'INSERT INTO payments (user_id, amount, payment_id, status) VALUES (?, ?, ?, ?)',
+            (user_id, amount, payment_id, status)
+        )
+        await db.commit()
+
+async def update_payment_status(payment_id, status):
+    async with aiosqlite.connect(DB_NAME) as db:
+        await db.execute('UPDATE payments SET status = ? WHERE payment_id = ?', (status, payment_id))
+        await db.commit()
+
+async def get_payment(payment_id):
+    async with aiosqlite.connect(DB_NAME) as db:
+        async with db.execute('SELECT * FROM payments WHERE payment_id = ?', (payment_id,)) as cursor:
+            return await cursor.fetchone()
+
+# ---- Статистика ----
+async def get_stats():
+    async with aiosqlite.connect(DB_NAME) as db:
+        total_users = await db.execute('SELECT COUNT(*) FROM users')
+        total_users = (await total_users.fetchone())[0]
+        active_vip = await db.execute('SELECT COUNT(*) FROM users WHERE vip_until > strftime("%s", "now")')
+        active_vip = (await active_vip.fetchone())[0]
+        total_payments = await db.execute('SELECT COUNT(*) FROM payments WHERE status="success"')
+        total_payments = (await total_payments.fetchone())[0]
+        total_revenue = await db.execute('SELECT SUM(amount) FROM payments WHERE status="success"')
+        total_revenue = (await total_revenue.fetchone())[0] or 0
+        return {
+            'total_users': total_users,
+            'active_vip': active_vip,
+            'total_payments': total_payments,
+            'total_revenue': total_revenue
+        }
