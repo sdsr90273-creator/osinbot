@@ -7,7 +7,7 @@ import string
 from datetime import datetime
 
 # ========== AIOGRAM И ВСПОМОГАТЕЛЬНЫЕ БИБЛИОТЕКИ ==========
-from aiogram import Bot, Dispatcher, types, F, Router  # <-- ДОБАВЛЕН Router
+from aiogram import Bot, Dispatcher, types, F, Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
@@ -540,6 +540,7 @@ async def cmd_stats(message: types.Message):
 
 # ========== ГЛАВНЫЙ ФАЙЛ (ЗАПУСК) ==========
 async def on_startup(bot: Bot):
+    # Этот вызов дублирует создание БД, но оставим для надёжности
     await init_db()
     logging.info("База данных инициализирована")
 
@@ -559,6 +560,11 @@ def start_webhook_server():
 
 async def main():
     logging.basicConfig(level=logging.INFO)
+    
+    # === ПРИНУДИТЕЛЬНОЕ СОЗДАНИЕ БАЗЫ ДАННЫХ ===
+    await init_db()
+    logging.info("База данных создана (или уже существовала)")
+
     bot = Bot(token=BOT_TOKEN)
     dp = Dispatcher()
     dp.include_router(router)
