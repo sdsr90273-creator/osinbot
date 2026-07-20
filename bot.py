@@ -7,7 +7,7 @@ import string
 from datetime import datetime
 
 # ========== AIOGRAM И ВСПОМОГАТЕЛЬНЫЕ БИБЛИОТЕКИ ==========
-from aiogram import Bot, Dispatcher, types, F
+from aiogram import Bot, Dispatcher, types, F, Router  # <-- ДОБАВЛЕН Router
 from aiogram.filters import Command
 from aiogram.fsm.context import FSMContext
 from aiogram.fsm.state import State, StatesGroup
@@ -16,13 +16,12 @@ import aiosqlite
 import aiohttp
 from aiohttp import web
 
-# ========== КОНФИГУРАЦИЯ (можно заменить прямо здесь) ==========
-BOT_TOKEN = os.getenv("BOT_TOKEN", "ВАШ_ТОКЕН")  # если не задано в окружении, впишите сюда
-ADMIN_IDS = list(map(int, os.getenv("ADMIN_IDS", "8457792268").split(',')))  # ваш ID
+# ========== КОНФИГУРАЦИЯ ==========
+BOT_TOKEN = os.getenv("BOT_TOKEN", "ВАШ_ТОКЕН")  # замените на ваш реальный токен
+ADMIN_IDS = list(map(int, os.getenv("ADMIN_IDS", "8457792268").split(',')))
 CHANNEL_ID = os.getenv("CHANNEL_ID", "-1001234567890")  # замените на реальный ID канала
 CHANNEL_LINK = "https://t.me/+GgrPnutacI82OTNi"
 
-# Настройки @sendholders (если не используете — оставьте пустыми)
 SENDHOLDERS_API_KEY = os.getenv("SENDHOLDERS_API_KEY", "")
 SENDHOLDERS_WEBHOOK_URL = os.getenv("SENDHOLDERS_WEBHOOK_URL", "")
 
@@ -32,7 +31,7 @@ VIP_PRICE = 500
 VIP_DURATION_DAYS = 30
 DB_NAME = "osint_bot.db"
 
-# ========== РАБОТА С БАЗОЙ ДАННЫХ (SQLite) ==========
+# ========== РАБОТА С БАЗОЙ ДАННЫХ ==========
 async def init_db():
     async with aiosqlite.connect(DB_NAME) as db:
         await db.execute('''
@@ -206,7 +205,7 @@ async def get_stats():
             'total_revenue': total_revenue
         }
 
-# ========== API-ФУНКЦИИ ДЛЯ ПОИСКА (заглушки) ==========
+# ========== API-ФУНКЦИИ ДЛЯ ПОИСКА ==========
 async def search_vk_by_name(first_name, last_name, limit=5):
     await asyncio.sleep(1)
     return [
@@ -232,7 +231,7 @@ async def search_leaked_data(query_type, value):
     else:
         return [{"source": "Общая база", "info": "Данные не найдены"}]
 
-# ========== ПЛАТЁЖНАЯ ИНТЕГРАЦИЯ (@sendholders) ==========
+# ========== ПЛАТЁЖНАЯ ИНТЕГРАЦИЯ ==========
 async def create_payment_link(user_id, amount=VIP_PRICE, description="VIP-подписка на месяц"):
     if not SENDHOLDERS_API_KEY:
         return None
@@ -289,6 +288,7 @@ class SearchState(StatesGroup):
 
 # ========== ОСНОВНЫЕ ОБРАБОТЧИКИ ==========
 router = Router()
+admin_router = Router()
 
 async def check_subscription(user_id: int, bot: Bot) -> bool:
     try:
@@ -451,7 +451,7 @@ async def vip_info(callback: types.CallbackQuery):
             [InlineKeyboardButton(text="💳 Купить VIP", callback_data="buy_vip")]
         ])
         await callback.message.edit_text(
-            "VIP не активна. Купите за {VIP_PRICE} руб. на {VIP_DURATION_DAYS} дней.",
+            f"VIP не активна. Купите за {VIP_PRICE} руб. на {VIP_DURATION_DAYS} дней.",
             reply_markup=keyboard
         )
         await callback.answer()
@@ -490,8 +490,6 @@ async def process_promo(message: types.Message, state: FSMContext):
         await message.answer("❌ Ошибка активации.")
 
 # ========== АДМИН-КОМАНДЫ ==========
-admin_router = Router()
-
 @admin_router.message(Command("create_promo"), F.from_user.id.in_(ADMIN_IDS))
 async def cmd_create_promo(message: types.Message):
     args = message.text.split()
